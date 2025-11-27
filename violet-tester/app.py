@@ -176,4 +176,31 @@ if prompt:
                 import openai
                 client = openai.OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
                 
-                messages_payload = [{"role": "system", "content": SYSTEM_
+                messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}]
+                if context_input:
+                    messages_payload.append({"role": "system", "content": f"Context: '{context_input}'"})
+                
+                for msg in st.session_state.messages[-6:]:
+                    messages_payload.append(msg)
+
+                stream = client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=messages_payload,
+                    stream=True,
+                )
+                
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        full_response += chunk.choices[0].delta.content
+                        message_placeholder.markdown(full_response + "▌")
+
+            except Exception as e:
+                full_response = f"**System Glitch:** {str(e)}"
+
+        message_placeholder.markdown(full_response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
+    
+    # Rerun to clear the "Quick Prompt" if it was used
+    if "quick_prompt" in st.session_state:
+        st.rerun()
