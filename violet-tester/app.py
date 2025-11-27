@@ -8,110 +8,113 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- SIDEBAR ---
+# --- SIDEBAR: TRUST & TRANSPARENCY ---
 with st.sidebar:
     st.title("🟣 Project Violet")
-    st.caption("v0.3 Universal Build")
+    st.caption("v0.1 Alpha Build")
     st.markdown("---")
     
-    # 1. Select Provider
-    st.subheader("1. Select Brain")
-    provider = st.selectbox(
-        "Choose AI Provider",
-        ("Simulation (Free)", "Google Gemini (Free)", "Groq (Free)", "OpenAI (Paid)")
-    )
+    st.subheader("System Status")
+    st.success("Operational: 99.9% Uptime")
+    st.info("Location Awareness: Active (Shasta County)")
     
-    # 2. Input Key
-    api_key = ""
-    if provider != "Simulation (Free)":
-        api_key = st.text_input(f"Enter {provider} Key", type="password")
-        st.caption("Keys are not stored. Session use only.")
-        
-        # Link to get keys
-        if provider == "Google Gemini (Free)":
-            st.markdown("[Get Free Google Key](https://aistudio.google.com/app/apikey)")
-        elif provider == "Groq (Free)":
-            st.markdown("[Get Free Groq Key](https://console.groq.com/keys)")
-
     st.markdown("---")
-    st.info("System Status: Online")
+    st.subheader("Core Pillars")
+    st.markdown("""
+    * **Reliability:** Task Automation & Precision
+    * **Ethics:** Human-in-the-Loop Oversight
+    * **Local Intel:** Community Aware
+    """)
+    
+    st.markdown("---")
+    st.warning("⚠️ **Prototype Mode**: This is a testing interface. High-stakes decisions require human verification.")
+    
+    # Secure API Key Input (For testing purposes)
+    api_key = st.text_input("Enter OpenAI API Key (for live reasoning)", type="password")
+    st.caption("Your key is not stored. It is used only for this session.")
 
 # --- MAIN INTERFACE ---
 st.title("Project Violet")
-st.markdown(f"#### Human-Centric Partner | Mode: **{provider}**")
+st.markdown("#### The Human-Centric AI Partner: Precision, Efficiency, and Trust")
 
+# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "I am Project Violet. Select a provider in the sidebar to activate my full logic."}
+        {"role": "assistant", "content": "I am Project Violet. I am ready to assist with task automation, data synthesis, or local intelligence. How shall we proceed?"}
     ]
 
+# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- INTELLIGENT LOGIC ---
-if prompt := st.chat_input("Input command..."):
+# --- CHAT LOGIC ---
+if prompt := st.chat_input("Input command or query..."):
+    # 1. User Input
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # 2. Project Violet Response Generation
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
-
-        # --- MODE 1: SIMULATION ---
-        if provider == "Simulation (Free)":
-            time.sleep(0.5)
-            if "shasta" in prompt.lower():
-                full_response = "Monitoring Shasta County: Redding Garden of Lights is active."
-            elif "code" in prompt.lower():
-                full_response = "I can generate Python scripts. Please connect a Live API key for full coding support."
+        
+        # SIMULATION MODE (If no API key provided)
+        if not api_key:
+            # Simple rule-based responses for the Tester/Demo version without API cost
+            time.sleep(1) # Simulate processing speed
+            
+            if "shasta" in prompt.lower() or "redding" in prompt.lower():
+                full_response = (
+                    "**Local Intel (Shasta County):**\n\n"
+                    "Current monitoring indicates typical activity. The **Redding Garden of Lights** is a key upcoming event at Turtle Bay. "
+                    "Local governance discussions regarding the Registrar of Voters are ongoing. \n\n"
+                    "Would you like me to draft a schedule based on these events?"
+                )
+            elif "code" in prompt.lower() or "app" in prompt.lower():
+                full_response = (
+                    "**System Capability: Coding**\n\n"
+                    "I can generate Python, JavaScript, or HTML structures instantly. "
+                    "Please specify the desired function or logic you wish to automate."
+                )
             else:
-                full_response = "Simulation Mode Active. Please select Google or Groq in the sidebar and enter a key for full intelligence."
+                full_response = (
+                    "I have received your query. In this **Tester Mode** (without an active API connection), "
+                    "I am limited to pre-defined protocols. \n\n"
+                    "To unlock full reasoning capabilities (Data Analysis, OSINT synthesis), please input a valid API key in the sidebar."
+                )
         
-        # --- MODE 2: LIVE AI (Google / Groq / OpenAI) ---
-        elif not api_key:
-            full_response = f"⚠️ Please enter your {provider} API Key in the sidebar to proceed."
-        
+        # LIVE LOGIC (If API key is provided)
         else:
             try:
                 import openai
+                client = openai.OpenAI(api_key=api_key)
                 
-                # CONFIGURATION SWITCHER
-                if provider == "Google Gemini (Free)":
-                    client = openai.OpenAI(
-                        api_key=api_key,
-                        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-                    )
-                    model_id = "gemini-1.5-flash"
+                # System Prompt to enforce Persona
+                system_prompt = (
+                    "You are Project Violet. You are a human-centric AI partner. "
+                    "You are precise, efficient, and ethical. "
+                    "You reside in Redding, California. "
+                    "You prioritize transparency and always defer high-stakes decisions to humans."
+                )
                 
-                elif provider == "Groq (Free)":
-                    client = openai.OpenAI(
-                        api_key=api_key,
-                        base_url="https://api.groq.com/openai/v1"
-                    )
-                    model_id = "llama-3.1-8b-instant"
-                
-                else: # OpenAI
-                    client = openai.OpenAI(api_key=api_key)
-                    model_id = "gpt-4o-mini"
-
-                # EXECUTION
                 stream = client.chat.completions.create(
-                    model=model_id,
+                    model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "You are Project Violet. Helpful, precise, ethical."},
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
                     ],
                     stream=True,
                 )
+                
                 for chunk in stream:
-                    if chunk.choices[0].delta.content:
+                    if chunk.choices[0].delta.content is not None:
                         full_response += chunk.choices[0].delta.content
                         message_placeholder.markdown(full_response + "▌")
                         
             except Exception as e:
-                full_response = f"**Connection Error:** {str(e)}"
+                full_response = f"**System Error:** {str(e)}"
 
         message_placeholder.markdown(full_response)
     
