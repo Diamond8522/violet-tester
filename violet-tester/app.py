@@ -1,145 +1,118 @@
 import streamlit as st
 import time
-import requests
-import feedparser
-import pytz
-from datetime import datetime
 
-# --- CONFIGURATION ---
+# --- PROJECT VIOLET CONFIGURATION ---
 st.set_page_config(
-    page_title="Project Violet | Live Dashboard",
+    page_title="Project Violet | Human-Centric AI",
     page_icon="🟣",
     layout="wide"
 )
 
-# --- LIVE DATA FUNCTIONS ---
-
-def get_redding_time():
-    """Fetches real-time PST for Shasta County."""
-    tz = pytz.timezone('US/Pacific')
-    return datetime.now(tz).strftime("%I:%M %p | %B %d, %Y")
-
-def get_quote():
-    """Fetches a live inspirational quote."""
-    try:
-        response = requests.get("https://zenquotes.io/api/random")
-        data = response.json()
-        return f"**\"{data[0]['q']}\"** — *{data[0]['a']}*"
-    except:
-        return "**\"The obstacle is the way.\"** — *Marcus Aurelius*"
-
-def get_news(topic):
-    """Parses Google News RSS for live headlines."""
-    try:
-        # URL encode the topic
-        safe_topic = topic.replace(" ", "+")
-        rss_url = f"https://news.google.com/rss/search?q={safe_topic}+when:7d&hl=en-US&gl=US&ceid=US:en"
-        feed = feedparser.parse(rss_url)
-        
-        news_items = []
-        for entry in feed.entries[:3]: # Get top 3
-            news_items.append(f"• [{entry.title}]({entry.link})")
-            
-        return "\n".join(news_items)
-    except:
-        return "• *Signal Interrupted: Unable to fetch live news feed.*"
-
-# --- SIDEBAR: MONITORING STATION ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("🟣 Project Violet")
-    st.caption("v0.3 Live Beta")
-    
+    st.caption("v0.3 Universal Build")
     st.markdown("---")
     
-    # 1. LIVE CLOCK
-    st.subheader("📍 Local Status")
-    st.markdown(f"**Redding, CA**")
-    st.markdown(f"`{get_redding_time()}`")
+    # 1. Select Provider
+    st.subheader("1. Select Brain")
+    provider = st.selectbox(
+        "Choose AI Provider",
+        ("Simulation (Free)", "Google Gemini (Free)", "Groq (Free)", "OpenAI (Paid)")
+    )
     
-    st.markdown("---")
-    
-    # 2. LIVE QUOTE
-    st.subheader("🧠 Daily Insight")
-    if 'quote' not in st.session_state:
-        st.session_state.quote = get_quote()
-    st.markdown(st.session_state.quote)
-    if st.button("Refresh Insight"):
-        st.session_state.quote = get_quote()
-        st.rerun()
+    # 2. Input Key
+    api_key = ""
+    if provider != "Simulation (Free)":
+        api_key = st.text_input(f"Enter {provider} Key", type="password")
+        st.caption("Keys are not stored. Session use only.")
+        
+        # Link to get keys
+        if provider == "Google Gemini (Free)":
+            st.markdown("[Get Free Google Key](https://aistudio.google.com/app/apikey)")
+        elif provider == "Groq (Free)":
+            st.markdown("[Get Free Groq Key](https://console.groq.com/keys)")
 
     st.markdown("---")
-    api_key = st.text_input("OpenAI API Key (Optional)", type="password")
+    st.info("System Status: Online")
 
 # --- MAIN INTERFACE ---
 st.title("Project Violet")
-st.markdown("#### Human-Centric AI | Situational Awareness Dashboard")
+st.markdown(f"#### Human-Centric Partner | Mode: **{provider}**")
 
-# --- TABBED INTERFACE ---
-tab1, tab2 = st.tabs(["💬 Conversation", "📡 Live Intel Streams"])
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "I am Project Violet. Select a provider in the sidebar to activate my full logic."}
+    ]
 
-with tab2:
-    col1, col2 = st.columns(2)
-    with col1:
-        st.success("Monitoring: Shasta County")
-        st.markdown(get_news("Redding California"))
-    with col2:
-        st.info("Monitoring: Artificial Intelligence")
-        st.markdown(get_news("Artificial Intelligence"))
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-with tab1:
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "I am online. My dashboard is monitoring live news from Redding and the AI sector. How can I help you?"}
-        ]
+# --- INTELLIGENT LOGIC ---
+if prompt := st.chat_input("Input command..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        full_response = ""
 
-    if prompt := st.chat_input("Command or Inquiry..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            
-            # --- SIMULATION MODE ---
-            if not api_key:
-                time.sleep(0.5)
-                if "news" in prompt.lower():
-                    full_response = "I have displayed the latest headlines in the **Live Intel Streams** tab above. I am tracking events in Redding and AI developments."
-                elif "time" in prompt.lower():
-                    full_response = f"The current local time in Redding is **{get_redding_time()}**."
-                else:
-                    full_response = (
-                        "**System Note:** I am running in Free Mode. \n\n"
-                        "I can show you live news (check the Tabs above) and local time, "
-                        "but for complex reasoning or coding, I require an API Key."
-                    )
-            
-            # --- LIVE BRAIN MODE ---
+        # --- MODE 1: SIMULATION ---
+        if provider == "Simulation (Free)":
+            time.sleep(0.5)
+            if "shasta" in prompt.lower():
+                full_response = "Monitoring Shasta County: Redding Garden of Lights is active."
+            elif "code" in prompt.lower():
+                full_response = "I can generate Python scripts. Please connect a Live API key for full coding support."
             else:
-                try:
-                    import openai
-                    client = openai.OpenAI(api_key=api_key)
-                    stream = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": "You are Project Violet. You have access to the user's local time and news feeds contextually."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        stream=True,
-                    )
-                    for chunk in stream:
-                        if chunk.choices[0].delta.content:
-                            full_response += chunk.choices[0].delta.content
-                            message_placeholder.markdown(full_response + "▌")
-                except Exception as e:
-                    full_response = f"Error: {e}"
-
-            message_placeholder.markdown(full_response)
+                full_response = "Simulation Mode Active. Please select Google or Groq in the sidebar and enter a key for full intelligence."
         
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        # --- MODE 2: LIVE AI (Google / Groq / OpenAI) ---
+        elif not api_key:
+            full_response = f"⚠️ Please enter your {provider} API Key in the sidebar to proceed."
+        
+        else:
+            try:
+                import openai
+                
+                # CONFIGURATION SWITCHER
+                if provider == "Google Gemini (Free)":
+                    client = openai.OpenAI(
+                        api_key=api_key,
+                        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                    )
+                    model_id = "gemini-1.5-flash"
+                
+                elif provider == "Groq (Free)":
+                    client = openai.OpenAI(
+                        api_key=api_key,
+                        base_url="https://api.groq.com/openai/v1"
+                    )
+                    model_id = "llama-3.1-8b-instant"
+                
+                else: # OpenAI
+                    client = openai.OpenAI(api_key=api_key)
+                    model_id = "gpt-4o-mini"
+
+                # EXECUTION
+                stream = client.chat.completions.create(
+                    model=model_id,
+                    messages=[
+                        {"role": "system", "content": "You are Project Violet. Helpful, precise, ethical."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    stream=True,
+                )
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        full_response += chunk.choices[0].delta.content
+                        message_placeholder.markdown(full_response + "▌")
+                        
+            except Exception as e:
+                full_response = f"**Connection Error:** {str(e)}"
+
+        message_placeholder.markdown(full_response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
