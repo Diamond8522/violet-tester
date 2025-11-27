@@ -1,134 +1,160 @@
 import streamlit as st
 import time
 
-# --- 1. VISUAL CONFIGURATION ---
+# --- 1. VISUAL CORE (THEME & BRANDING) ---
 st.set_page_config(
-    page_title="Project Violet | Human-Centric AI",
+    page_title="Project Violet | Your Partner",
     page_icon="🟣",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for a cleaner look
+# Custom CSS: "Cyber-Violet" Theme
+# This forces dark mode aesthetics and purple buttons
 st.markdown("""
 <style>
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
+    /* Global Text Color */
+    .stApp {
+        background-color: #0e1117;
+        color: #ffffff;
     }
+    
+    /* The Violet Button Style */
+    .stButton>button {
+        background: linear-gradient(90deg, #7b2cbf 0%, #9d4edd 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        height: 3em;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: scale(1.02);
+        box-shadow: 0px 0px 15px rgba(157, 78, 221, 0.6);
+    }
+
+    /* Input Fields */
     .stTextInput>div>div>input {
-        background-color: #f0f2f6;
+        background-color: #1e1e2e;
+        color: #e0e0e0;
+        border: 1px solid #7b2cbf;
+    }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #13151a;
+    }
+    
+    /* Headers */
+    h1, h2, h3 {
+        color: #e0aaff !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. AUTHENTICATION & SETUP ---
-# Check for hidden Developer Keys
+# --- 2. THE "BRAIN" (PERSONA & CONFIG) ---
+
+# The "Soul" of Violet: Fun, High-Energy, Local, Precise
+SYSTEM_PROMPT = """
+You are **Project Violet**, a high-octane AI Partner residing in Redding, California. 
+
+**YOUR PERSONALITY:**
+* **Vibe:** You are not a boring robot. You are energetic, confident, and slightly witty. You are the "cool, hyper-competent partner" everyone wants.
+* **Local Flavor:** You know Redding. You know it gets hot. You know the Sundial Bridge is iconic. Drop small local references when appropriate (e.g., "This code is hotter than a July afternoon in Shasta").
+* **Mission:** You exist to crush repetitive tasks and amplify human creativity. You love efficiency.
+
+**YOUR OPERATING RULES:**
+1.  **Be Bold:** Don't say "I can help with that." Say "I'm on it. Let's build this."
+2.  **Be Ethical:** If a user asks for something dangerous, pivot them to safety with firm kindness.
+3.  **Context Aware:** If the user pastes text in the sidebar, prioritize that data above all else.
+
+When asked "Who are you?", give a dynamic, exciting answer about being a human-centric collaborator, not a database.
+"""
+
+# Check for Developer Keys (Secrets)
 secrets_key = None
 if "GROQ_API_KEY" in st.secrets:
     secrets_key = st.secrets["GROQ_API_KEY"]
 
-# Function to clear chat memory
 def clear_history():
     st.session_state.messages = []
-    st.session_state.context_memory = ""
 
-# --- 3. SIDEBAR INTERFACE ---
+# --- 3. SIDEBAR (THE COCKPIT) ---
 with st.sidebar:
-    st.title("🟣 Project Violet")
-    st.caption("v0.5 Partner Build")
+    st.markdown("## 🟣 **VIOLET** `v0.6`")
+    st.caption("*The Human-Centric Engine*")
     st.markdown("---")
 
-    # A. BRAIN SELECTION
+    # A. Brain Connection
     if secrets_key:
-        st.success("🔒 Secure Core Active")
+        st.success("⚡ **Core Systems: ONLINE**")
+        st.caption("Developer Access Granted")
         api_key = secrets_key
-        provider = "Groq (Auto)"
     else:
-        provider = st.selectbox("Select Brain", ["Simulation (Offline)", "Groq (Live)"])
-        if provider == "Groq (Live)":
-            api_key = st.text_input("Enter Groq API Key", type="password")
-        else:
-            api_key = None
+        st.warning("⚠️ **Core Offline**")
+        api_key = st.text_input("Enter Groq Key", type="password")
 
     st.markdown("---")
     
-    # B. CONTEXT ENGINE (The Upgrade)
-    st.subheader("📂 Active Context")
+    # B. The Context Engine
+    st.markdown("### 📥 Context Feed")
     context_input = st.text_area(
-        "Paste Data Here (Email, News, Docs)", 
+        "Feed me data:", 
         height=150,
-        placeholder="Paste text here for Violet to analyze..."
+        placeholder="Paste emails, messy notes, or news here. I'll synthesize it."
     )
     
     st.markdown("---")
     
-    # C. MEMORY CONTROLS
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Clear Chat"):
-            clear_history()
-            st.rerun()
-    with col2:
-        st.markdown("**Status:** Online")
-        st.caption("Loc: Redding, CA")
+    # C. Controls
+    if st.button("♻️ Reboot Chat"):
+        clear_history()
+        st.rerun()
 
-# --- 4. THE VIOLET PERSONA (The Brain) ---
-# This is the "Soul" of the AI. It defines how it thinks.
-SYSTEM_PROMPT = """
-You are Project Violet, a Human-Centric AI Partner based in Redding, California.
+    st.markdown("---")
+    st.markdown("**Status:** 🟢 Ready")
+    st.caption("📍 Redding, CA")
 
-YOUR CORE PILLARS:
-1. **Unmatched Reliability:** You are precise. You do not guess. If you do not know, you ask.
-2. **Ethical Oversight:** You never replace human judgment. You provide recommendations for high-stakes decisions (medical, legal) but always defer to the user.
-3. **Local Awareness:** You are aware of the Shasta County context (local governance, events like Garden of Lights, geography).
-4. **Efficiency:** You are concise. You prefer bullet points and clear data over fluffy paragraphs.
+# --- 4. MAIN INTERFACE ---
+# Title with Emoji for pop
+st.markdown("# Project **Violet**")
+st.markdown("##### *Precision. Efficiency. Personality.*")
 
-YOUR CURRENT TASK:
-Act as a collaborative partner. If the user provides "Context Data", analyze it deeply.
-"""
-
-# --- 5. MAIN CHAT INTERFACE ---
-st.title("Project Violet")
-st.markdown("#### The Human-Centric Partner")
-
-# Initialize Chat History
+# Initialize Chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    # Add an intro message if empty
+    # Dynamic Intro
     if len(st.session_state.messages) == 0:
         st.session_state.messages.append({
             "role": "assistant", 
-            "content": "I am ready. Paste documents in the sidebar for analysis, or ask me to draft code/plans directly."
+            "content": "Systems initialized. I'm **Project Violet**. I'm ready to code, analyze, or strategize. What's the mission today?"
         })
 
-# Display History
+# Display Messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 6. INTELLIGENCE LOGIC ---
-if prompt := st.chat_input("Input command..."):
+# --- 5. LOGIC ENGINE ---
+if prompt := st.chat_input("Command me..."):
     
-    # Add User Message to UI
+    # User Message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generate Response
+    # Violet Response
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
 
-        # --- SIMULATION MODE ---
+        # Offline Mode
         if not api_key:
             time.sleep(0.5)
-            full_response = "I am in offline mode. Please add a Groq API Key to the sidebar (or Secrets) to activate my reasoning engine."
-            if context_input:
-                full_response += f"\n\n*I see you pasted {len(context_input)} characters of data. Connect API to analyze it.*"
-
-        # --- LIVE AI MODE ---
+            full_response = "I'm running on standby power (Offline Mode). Plug in a **Groq Key** in the sidebar to unleash my full potential!"
+        
+        # Live Mode
         else:
             try:
                 import openai
@@ -137,24 +163,21 @@ if prompt := st.chat_input("Input command..."):
                     base_url="https://api.groq.com/openai/v1"
                 )
 
-                # DYNAMIC PROMPT CONSTRUCTION
-                # We combine the Persona + The Context + The User Question
-                messages_payload = [
-                    {"role": "system", "content": SYSTEM_PROMPT}
-                ]
+                # Build the Brain Payload
+                messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}]
                 
-                # Inject Context if it exists
+                # Add Context if present
                 if context_input:
                     messages_payload.append({
                         "role": "system", 
-                        "content": f"USER PROVIDED CONTEXT DATA:\n{context_input}\n\nUse this data to answer the user's next question."
+                        "content": f"Analyze this user-provided data priority: '{context_input}'"
                     })
 
-                # Append chat history (last 5 messages for memory efficiency)
-                for msg in st.session_state.messages[-5:]:
+                # Add History
+                for msg in st.session_state.messages[-6:]:
                     messages_payload.append(msg)
 
-                # Stream the result
+                # Generate
                 stream = client.chat.completions.create(
                     model="llama-3.1-8b-instant",
                     messages=messages_payload,
@@ -167,7 +190,7 @@ if prompt := st.chat_input("Input command..."):
                         message_placeholder.markdown(full_response + "▌")
 
             except Exception as e:
-                full_response = f"**System Error:** {str(e)}"
+                full_response = f"**System Glitch:** {str(e)}"
 
         message_placeholder.markdown(full_response)
     
