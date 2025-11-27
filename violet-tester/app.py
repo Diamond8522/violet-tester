@@ -8,114 +8,120 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- SIDEBAR: TRUST & TRANSPARENCY ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("🟣 Project Violet")
-    st.caption("v0.1 Alpha Build")
+    st.caption("v0.2 Beta Build")
     st.markdown("---")
-    
-    st.subheader("System Status")
-    st.success("Operational: 99.9% Uptime")
-    st.info("Location Awareness: Active (Shasta County)")
-    
+    st.success("System Status: Operational")
+    st.info("Location: Shasta County, CA")
     st.markdown("---")
-    st.subheader("Core Pillars")
-    st.markdown("""
-    * **Reliability:** Task Automation & Precision
-    * **Ethics:** Human-in-the-Loop Oversight
-    * **Local Intel:** Community Aware
-    """)
-    
-    st.markdown("---")
-    st.warning("⚠️ **Prototype Mode**: This is a testing interface. High-stakes decisions require human verification.")
-    
-    # Secure API Key Input (For testing purposes, using a placeholder logic or real API)
-    # In a real deployment, you would use st.secrets
-    api_key = st.text_input("Enter OpenAI API Key (for live reasoning)", type="password")
-    st.caption("Your key is not stored. It is used only for this session.")
+    st.markdown("### Control Panel")
+    api_key = st.text_input("OpenAI API Key (Optional)", type="password")
+    if not api_key:
+        st.markdown("🟢 **Simulation Mode Active**\n\n(Running on internal logic scripts. No costs.)")
+    else:
+        st.markdown("Zap **Live Logic Active**\n\n(Connected to GPT-4o.)")
 
 # --- MAIN INTERFACE ---
 st.title("Project Violet")
-st.markdown("#### The Human-Centric AI Partner: Precision, Efficiency, and Trust")
+st.markdown("#### The Human-Centric AI Partner")
 
-# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "I am Project Violet. I am ready to assist with task automation, data synthesis, or local intelligence. How shall we proceed?"}
+        {"role": "assistant", "content": "I am Project Violet. I am online. You can test my local knowledge or coding protocols without an API key. How can I help?"}
     ]
 
-# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- CHAT LOGIC ---
-if prompt := st.chat_input("Input command or query..."):
-    # 1. User Input
+# --- INTELLIGENT LOGIC ---
+if prompt := st.chat_input("Ask me anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Project Violet Response Generation
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
         
-        # SIMULATION MODE (If no API key provided)
+        # --- PATH A: SIMULATION (FREE MODE) ---
         if not api_key:
-            # Simple rule-based responses for the Tester/Demo version without API cost
-            time.sleep(1) # Simulate processing speed
+            time.sleep(0.8) # Simulate thinking
+            p_lower = prompt.lower()
             
-            if "shasta" in prompt.lower() or "redding" in prompt.lower():
+            # 1. Greetings
+            if any(x in p_lower for x in ["hi", "hello", "hey", "start"]):
                 full_response = (
-                    "**Local Intel (Shasta County):**\n\n"
-                    "Current monitoring indicates typical activity. The **Redding Garden of Lights** is a key upcoming event at Turtle Bay. "
-                    "Local governance discussions regarding the Registrar of Voters are ongoing. \n\n"
-                    "Would you like me to draft a schedule based on these events?"
+                    "Hello. I am Project Violet. \n\n"
+                    "I am currently running in **Simulation Mode**. I can demonstrate:\n"
+                    "1. **Local Intel** (Ask about Shasta County)\n"
+                    "2. **Coding** (Ask me to generate a script)\n"
+                    "3. **Ethics** (Ask about my safety protocols)"
                 )
-            elif "code" in prompt.lower() or "app" in prompt.lower():
+            
+            # 2. Local Knowledge (Shasta/Redding)
+            elif any(x in p_lower for x in ["shasta", "redding", "local", "news"]):
                 full_response = (
-                    "**System Capability: Coding**\n\n"
-                    "I can generate Python, JavaScript, or HTML structures instantly. "
-                    "Please specify the desired function or logic you wish to automate."
+                    "**Location Status: Redding, CA**\n\n"
+                    "* **Events:** The Redding Garden of Lights is the primary social event currently monitored.\n"
+                    "* **Governance:** Monitoring County Clerk appointment discussions.\n"
+                    "* **Weather/Env:** Burn permits are currently subject to seasonal regulation.\n\n"
+                    "I can structure this into a daily briefing format if requested."
                 )
+
+            # 3. Coding/Tech
+            elif any(x in p_lower for x in ["code", "python", "app", "write", "script"]):
+                full_response = (
+                    "**Task Protocol: Code Generation**\n\n"
+                    "I can generate Python, JavaScript, and SQL.\n"
+                    "Example Python structure for data sorting:\n"
+                    "```python\n"
+                    "def sort_data(dataset):\n"
+                    "    return sorted(dataset, key=lambda x: x['timestamp'])\n"
+                    "```\n"
+                    "In Live Mode (with API key), I can write fully functional applications."
+                )
+            
+            # 4. Identity/Who are you
+            elif any(x in p_lower for x in ["who", "what", "violet", "name"]):
+                full_response = (
+                    "I am **Project Violet**.\n\n"
+                    "I am a Human-Centric AI designed for precision and trust. "
+                    "I do not replace humans; I handle high-volume tasks so you can focus on decisions."
+                )
+
+            # 5. Fallback for unknown inputs
             else:
                 full_response = (
-                    "I have received your query. In this **Tester Mode** (without an active API connection), "
-                    "I am limited to pre-defined protocols. \n\n"
-                    "To unlock full reasoning capabilities (Data Analysis, OSINT synthesis), please input a valid API key in the sidebar."
+                    "I understood that input. \n\n"
+                    "Because I am in **Simulation Mode** (No API Key), my responses are limited to my core demonstration scripts.\n\n"
+                    "**Try asking me:**\n"
+                    "* 'What is happening in Redding?'\n"
+                    "* 'Write a python script.'\n"
+                    "* 'Who are you?'"
                 )
-        
-        # LIVE LOGIC (If API key is provided - This requires `openai` library)
+
+        # --- PATH B: REAL AI (WITH KEY) ---
         else:
             try:
                 import openai
                 client = openai.OpenAI(api_key=api_key)
-                
-                # System Prompt to enforce Persona
-                system_prompt = (
-                    "You are Project Violet. You are a human-centric AI partner. "
-                    "You are precise, efficient, and ethical. "
-                    "You reside in Redding, California. "
-                    "You prioritize transparency and always defer high-stakes decisions to humans."
-                )
-                
                 stream = client.chat.completions.create(
-                    model="gpt-4o-mini", # Efficient model
+                    model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": system_prompt},
+                        {"role": "system", "content": "You are Project Violet. Helpful, precise, ethical."},
                         {"role": "user", "content": prompt}
                     ],
                     stream=True,
                 )
-                
                 for chunk in stream:
-                    if chunk.choices[0].delta.content is not None:
+                    if chunk.choices[0].delta.content:
                         full_response += chunk.choices[0].delta.content
                         message_placeholder.markdown(full_response + "▌")
-                        
             except Exception as e:
-                full_response = f"**System Error:** {str(e)}"
+                full_response = f"Error: {e}"
 
         message_placeholder.markdown(full_response)
     
