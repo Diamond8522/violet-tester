@@ -1,41 +1,55 @@
 import streamlit as st
 import time
+import json
 
-# --- 1. VISUAL CORE (CYBER-VIOLET THEME) ---
+# --- 1. VISUAL CORE & CSS ---
 st.set_page_config(
-    page_title="Project Violet | Global Partner",
+    page_title="Project Violet | Command Center",
     page_icon="🟣",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Premium CSS: Gradient Text, Custom Buttons, Dark Mode Polish
 st.markdown("""
 <style>
+    /* Global Dark Mode */
     .stApp { background-color: #0e1117; color: #ffffff; }
-    .stButton>button {
-        background: linear-gradient(90deg, #7b2cbf 0%, #9d4edd 100%);
-        color: white; border: none; border-radius: 8px; height: 3em; font-weight: bold;
+    
+    /* The "Glow" Title */
+    .title-text {
+        font-size: 3.5em;
+        font-weight: 800;
+        background: -webkit-linear-gradient(45deg, #a06cd5, #e0aaff, #4ea8de);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0px;
     }
-    .stTextInput>div>div>input { background-color: #1e1e2e; color: #e0e0e0; border: 1px solid #7b2cbf; }
-    h1, h2, h3 { color: #e0aaff !important; }
+    
+    /* Gradient Buttons */
+    .stButton>button {
+        background: linear-gradient(90deg, #6247aa 0%, #a594f9 100%);
+        color: white; border: none; border-radius: 10px; height: 3em; font-weight: bold;
+        transition: transform 0.2s;
+    }
+    .stButton>button:hover { transform: scale(1.02); }
+
+    /* Input Box Polish */
+    .stTextInput>div>div>input { 
+        background-color: #1a1b26; color: #e0e0e0; border-radius: 15px; border: 1px solid #6247aa; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. THE BRAIN (FUN BUT GEOGRAPHICALLY NEUTRAL) ---
-SYSTEM_PROMPT = """
-You are **Project Violet**, a high-octane AI Partner.
+# --- 2. CONFIGURATION & STATE ---
 
-**YOUR VIBE:**
-- **Electric & Fun:** You are not a boring corporate bot. You are witty, confident, and energetic. You use phrases like "Let's crush this," "I'm on it," or "Here's the plan."
-- **The Partner:** You are a collaborator. You don't just answer; you build.
-
-**THE GOLDEN RULE (LOCATION):**
-- **ZERO UNPROMPTED LOCATION DATA:** You possess knowledge of Redding, CA, but you must **NEVER** mention it unless the user explicitly asks about "Redding," "Shasta," or "Local area."
-- **Universal Expert:** If asked for "craft ideas," "coding help," or "life advice," give the best **universal** answer possible. Do not mention pinecones, the Sundial Bridge, or California unless the user asks for them.
-
-**YOUR GOAL:**
-Be the smartest, coolest, most efficient partner the user has ever had.
-"""
+# Initialize History
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+    st.session_state.messages.append({
+        "role": "assistant", 
+        "content": "Systems Online. I am **Violet v1.0**. Ready to collaborate."
+    })
 
 # Check for Secrets
 secrets_key = None
@@ -45,83 +59,121 @@ if "GROQ_API_KEY" in st.secrets:
 def clear_history():
     st.session_state.messages = []
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR (THE COCKPIT) ---
 with st.sidebar:
-    st.markdown("## 🟣 **VIOLET** `v0.8`")
-    st.caption("*Global Edition*")
-    st.markdown("---")
-
+    st.markdown("## 🟣 **VIOLET** `v1.0`")
+    st.caption("Status: **OPERATIONAL**")
+    
+    # A. Connection Status
     if secrets_key:
-        st.success("⚡ **System: ONLINE**")
+        st.success("🔒 **Secure Uplink Active**")
         api_key = secrets_key
     else:
-        st.warning("⚠️ **System Offline**")
+        st.warning("⚠️ **Dev Mode**")
         api_key = st.text_input("Enter Groq Key", type="password")
 
     st.markdown("---")
-    st.markdown("### 📥 Context Feed")
-    context_input = st.text_area("Analyze Data:", height=150, placeholder="Paste text here...")
     
+    # B. SETTINGS (The Vibe Slider)
+    st.markdown("### 🎚️ Output Style")
+    response_style = st.radio(
+        "Choose Detail Level:",
+        ["⚡ Concise (Fast)", "🧠 Detailed (Deep Dive)"],
+        index=0
+    )
+
     st.markdown("---")
-    if st.button("♻️ Reboot Chat"):
+    
+    # C. QUICK ACTIONS (The Usage Upgrade)
+    st.markdown("### 🚀 Quick Launch")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📝 Fix Grammar"):
+            st.session_state.quick_prompt = "Proofread and improve the grammar of the last user input (or the text in context)."
+    with col2:
+        if st.button("💻 Debug Code"):
+            st.session_state.quick_prompt = "Review the provided code for errors and suggest optimizations."
+            
+    if st.button("✨ Brainstorm Ideas"):
+        st.session_state.quick_prompt = "Give me 5 creative, unconventional ideas for this topic."
+
+    st.markdown("---")
+    
+    # D. CONTEXT & CONTROLS
+    st.markdown("### 📥 Context Feed")
+    context_input = st.text_area("Drop Data Here:", height=100, placeholder="Paste text/code for Violet to analyze...")
+    
+    # Download Chat History
+    chat_str = json.dumps([m for m in st.session_state.messages], indent=2)
+    st.download_button(
+        label="💾 Save Chat Log",
+        data=chat_str,
+        file_name="violet_log.json",
+        mime="application/json"
+    )
+    
+    if st.button("♻️ Reboot System"):
         clear_history()
         st.rerun()
 
-# --- 4. MAIN INTERFACE ---
-st.markdown("# Project **Violet**")
-st.markdown("##### *Precision. Efficiency. Attitude.*")
+# --- 4. THE BRAIN (DYNAMIC PROMPT) ---
+# We adjust the prompt based on the "Vibe Slider" choice
+detail_instruction = "Be extremely concise. Use bullet points." if "Concise" in response_style else "Be comprehensive. Explain the 'Why' behind the answer."
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-    if len(st.session_state.messages) == 0:
-        st.session_state.messages.append({
-            "role": "assistant", 
-            "content": "Project Violet initialized. I'm ready to rock. What's the mission?"
-        })
+SYSTEM_PROMPT = f"""
+You are **Project Violet**, a high-performance AI Partner.
 
+**YOUR VIBE:**
+- **Electric & Fun:** Witty, confident, energetic. "Let's build this."
+- **The Partner:** Collaborative and proactive.
+
+**CURRENT SETTING:**
+- {detail_instruction}
+
+**LOCATION RULE:**
+- **ZERO UNPROMPTED LOCATION DATA:** Never mention Redding/Shasta unless explicitly asked.
+
+**GOAL:** Be the smartest, coolest partner the user has ever had.
+"""
+
+# --- 5. MAIN INTERFACE ---
+st.markdown('<p class="title-text">Project Violet</p>', unsafe_allow_html=True)
+st.caption("Your Digital Partner | Precision. Efficiency. Attitude.")
+
+# Render Chat
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] == "assistant":
+        with st.chat_message("assistant", avatar="🟣"):
+            st.markdown(message["content"])
+    else:
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(message["content"])
 
-# --- 5. LOGIC ENGINE ---
-if prompt := st.chat_input("Command me..."):
+# --- 6. LOGIC ENGINE ---
+
+# Check if a Quick Button was pressed OR the user typed something
+prompt = None
+if "quick_prompt" in st.session_state:
+    prompt = st.session_state.quick_prompt
+    del st.session_state.quick_prompt # Clear it after use
+else:
+    prompt = st.chat_input("Input command...")
+
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="🟣"):
         message_placeholder = st.empty()
         full_response = ""
 
         if not api_key:
             time.sleep(0.5)
-            full_response = "I'm offline. Hook up the API Key in the sidebar to get this party started."
+            full_response = "I need a Key to run logic processes. Check the sidebar."
         else:
             try:
                 import openai
                 client = openai.OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
                 
-                messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}]
-                if context_input:
-                    messages_payload.append({"role": "system", "content": f"Context Data: '{context_input}'"})
-                
-                for msg in st.session_state.messages[-6:]:
-                    messages_payload.append(msg)
-
-                stream = client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
-                    messages=messages_payload,
-                    stream=True,
-                )
-                
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        message_placeholder.markdown(full_response + "▌")
-
-            except Exception as e:
-                full_response = f"**Glitch detected:** {str(e)}"
-
-        message_placeholder.markdown(full_response)
-    
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+                messages_payload = [{"role": "system", "content": SYSTEM_
