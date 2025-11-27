@@ -1,128 +1,145 @@
 import streamlit as st
 import time
+import requests
+import feedparser
+import pytz
+from datetime import datetime
 
-# --- PROJECT VIOLET CONFIGURATION ---
+# --- CONFIGURATION ---
 st.set_page_config(
-    page_title="Project Violet | Human-Centric AI",
+    page_title="Project Violet | Live Dashboard",
     page_icon="🟣",
     layout="wide"
 )
 
-# --- SIDEBAR ---
+# --- LIVE DATA FUNCTIONS ---
+
+def get_redding_time():
+    """Fetches real-time PST for Shasta County."""
+    tz = pytz.timezone('US/Pacific')
+    return datetime.now(tz).strftime("%I:%M %p | %B %d, %Y")
+
+def get_quote():
+    """Fetches a live inspirational quote."""
+    try:
+        response = requests.get("https://zenquotes.io/api/random")
+        data = response.json()
+        return f"**\"{data[0]['q']}\"** — *{data[0]['a']}*"
+    except:
+        return "**\"The obstacle is the way.\"** — *Marcus Aurelius*"
+
+def get_news(topic):
+    """Parses Google News RSS for live headlines."""
+    try:
+        # URL encode the topic
+        safe_topic = topic.replace(" ", "+")
+        rss_url = f"https://news.google.com/rss/search?q={safe_topic}+when:7d&hl=en-US&gl=US&ceid=US:en"
+        feed = feedparser.parse(rss_url)
+        
+        news_items = []
+        for entry in feed.entries[:3]: # Get top 3
+            news_items.append(f"• [{entry.title}]({entry.link})")
+            
+        return "\n".join(news_items)
+    except:
+        return "• *Signal Interrupted: Unable to fetch live news feed.*"
+
+# --- SIDEBAR: MONITORING STATION ---
 with st.sidebar:
     st.title("🟣 Project Violet")
-    st.caption("v0.2 Beta Build")
+    st.caption("v0.3 Live Beta")
+    
     st.markdown("---")
-    st.success("System Status: Operational")
-    st.info("Location: Shasta County, CA")
+    
+    # 1. LIVE CLOCK
+    st.subheader("📍 Local Status")
+    st.markdown(f"**Redding, CA**")
+    st.markdown(f"`{get_redding_time()}`")
+    
     st.markdown("---")
-    st.markdown("### Control Panel")
+    
+    # 2. LIVE QUOTE
+    st.subheader("🧠 Daily Insight")
+    if 'quote' not in st.session_state:
+        st.session_state.quote = get_quote()
+    st.markdown(st.session_state.quote)
+    if st.button("Refresh Insight"):
+        st.session_state.quote = get_quote()
+        st.rerun()
+
+    st.markdown("---")
     api_key = st.text_input("OpenAI API Key (Optional)", type="password")
-    if not api_key:
-        st.markdown("🟢 **Simulation Mode Active**\n\n(Running on internal logic scripts. No costs.)")
-    else:
-        st.markdown("Zap **Live Logic Active**\n\n(Connected to GPT-4o.)")
 
 # --- MAIN INTERFACE ---
 st.title("Project Violet")
-st.markdown("#### The Human-Centric AI Partner")
+st.markdown("#### Human-Centric AI | Situational Awareness Dashboard")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "I am Project Violet. I am online. You can test my local knowledge or coding protocols without an API key. How can I help?"}
-    ]
+# --- TABBED INTERFACE ---
+tab1, tab2 = st.tabs(["💬 Conversation", "📡 Live Intel Streams"])
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+with tab2:
+    col1, col2 = st.columns(2)
+    with col1:
+        st.success("Monitoring: Shasta County")
+        st.markdown(get_news("Redding California"))
+    with col2:
+        st.info("Monitoring: Artificial Intelligence")
+        st.markdown(get_news("Artificial Intelligence"))
 
-# --- INTELLIGENT LOGIC ---
-if prompt := st.chat_input("Ask me anything..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+with tab1:
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "I am online. My dashboard is monitoring live news from Redding and the AI sector. How can I help you?"}
+        ]
 
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_response = ""
-        
-        # --- PATH A: SIMULATION (FREE MODE) ---
-        if not api_key:
-            time.sleep(0.8) # Simulate thinking
-            p_lower = prompt.lower()
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input("Command or Inquiry..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
             
-            # 1. Greetings
-            if any(x in p_lower for x in ["hi", "hello", "hey", "start"]):
-                full_response = (
-                    "Hello. I am Project Violet. \n\n"
-                    "I am currently running in **Simulation Mode**. I can demonstrate:\n"
-                    "1. **Local Intel** (Ask about Shasta County)\n"
-                    "2. **Coding** (Ask me to generate a script)\n"
-                    "3. **Ethics** (Ask about my safety protocols)"
-                )
+            # --- SIMULATION MODE ---
+            if not api_key:
+                time.sleep(0.5)
+                if "news" in prompt.lower():
+                    full_response = "I have displayed the latest headlines in the **Live Intel Streams** tab above. I am tracking events in Redding and AI developments."
+                elif "time" in prompt.lower():
+                    full_response = f"The current local time in Redding is **{get_redding_time()}**."
+                else:
+                    full_response = (
+                        "**System Note:** I am running in Free Mode. \n\n"
+                        "I can show you live news (check the Tabs above) and local time, "
+                        "but for complex reasoning or coding, I require an API Key."
+                    )
             
-            # 2. Local Knowledge (Shasta/Redding)
-            elif any(x in p_lower for x in ["shasta", "redding", "local", "news"]):
-                full_response = (
-                    "**Location Status: Redding, CA**\n\n"
-                    "* **Events:** The Redding Garden of Lights is the primary social event currently monitored.\n"
-                    "* **Governance:** Monitoring County Clerk appointment discussions.\n"
-                    "* **Weather/Env:** Burn permits are currently subject to seasonal regulation.\n\n"
-                    "I can structure this into a daily briefing format if requested."
-                )
-
-            # 3. Coding/Tech
-            elif any(x in p_lower for x in ["code", "python", "app", "write", "script"]):
-                full_response = (
-                    "**Task Protocol: Code Generation**\n\n"
-                    "I can generate Python, JavaScript, and SQL.\n"
-                    "Example Python structure for data sorting:\n"
-                    "```python\n"
-                    "def sort_data(dataset):\n"
-                    "    return sorted(dataset, key=lambda x: x['timestamp'])\n"
-                    "```\n"
-                    "In Live Mode (with API key), I can write fully functional applications."
-                )
-            
-            # 4. Identity/Who are you
-            elif any(x in p_lower for x in ["who", "what", "violet", "name"]):
-                full_response = (
-                    "I am **Project Violet**.\n\n"
-                    "I am a Human-Centric AI designed for precision and trust. "
-                    "I do not replace humans; I handle high-volume tasks so you can focus on decisions."
-                )
-
-            # 5. Fallback for unknown inputs
+            # --- LIVE BRAIN MODE ---
             else:
-                full_response = (
-                    "I understood that input. \n\n"
-                    "Because I am in **Simulation Mode** (No API Key), my responses are limited to my core demonstration scripts.\n\n"
-                    "**Try asking me:**\n"
-                    "* 'What is happening in Redding?'\n"
-                    "* 'Write a python script.'\n"
-                    "* 'Who are you?'"
-                )
+                try:
+                    import openai
+                    client = openai.OpenAI(api_key=api_key)
+                    stream = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "You are Project Violet. You have access to the user's local time and news feeds contextually."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        stream=True,
+                    )
+                    for chunk in stream:
+                        if chunk.choices[0].delta.content:
+                            full_response += chunk.choices[0].delta.content
+                            message_placeholder.markdown(full_response + "▌")
+                except Exception as e:
+                    full_response = f"Error: {e}"
 
-        # --- PATH B: REAL AI (WITH KEY) ---
-        else:
-            try:
-                import openai
-                client = openai.OpenAI(api_key=api_key)
-                stream = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are Project Violet. Helpful, precise, ethical."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    stream=True,
-                )
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        message_placeholder.markdown(full_response + "▌")
-            except Exception as e:
-                full_response = f"Error: {e}"
-
-        message_placeholder.markdown(full_response)
-    
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+            message_placeholder.markdown(full_response)
+        
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
